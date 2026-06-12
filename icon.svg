@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#08090b"/>
+  <polygon points="14,80 28,62 64,38 110,58 118,76 118,84 102,84 98,76 78,76 74,84 50,84 46,76 30,76 26,84 14,84"
+           fill="rgba(201,206,214,0.06)" stroke="#c9ced6" stroke-width="3" stroke-linejoin="miter"/>
+  <line x1="64" y1="38" x2="110" y2="58" stroke="#e82127" stroke-width="3"/>
+  <circle cx="40" cy="86" r="12" fill="#08090b" stroke="#c9ced6" stroke-width="3"/>
+  <circle cx="88" cy="86" r="12" fill="#08090b" stroke="#c9ced6" stroke-width="3"/>
+  <text x="64" y="118" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif" font-size="13" letter-spacing="3" fill="#c9ced6" font-weight="bold">GARAGE</text>
+</svg>
