@@ -359,7 +359,9 @@ canvas{display:block;width:100%}
 
     <div class="grid2">
       <div class="card">
-        <h3>Issue Map <em>tap a hotspot to open its log</em></h3>
+        <h3 id="heroTitle">Issue Map <em>tap a hotspot to open its log</em></h3>
+        <div id="heroWrap"></div>
+        <input type="file" id="hero_photo" accept="image/*" style="display:none" onchange="heroSave()">
         <svg id="ctSvg" viewBox="0 0 640 240" width="100%" style="--ctHi:#c2c9d3;--ctMid:#a9b1bd;--ctLo:#8d95a2;--ctDeep:#6e7682">
           <defs>
             <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1">
@@ -891,6 +893,7 @@ const DEFAULTS = {
   onboarded: false,
   visit: null,
   fsd: { miles: 4980, photos: [] },
+  heroPhoto: null,
 };
 let state = JSON.parse(JSON.stringify(DEFAULTS));
 state.profile.delivered = DEFAULTS.profile.delivered;
@@ -1378,6 +1381,36 @@ function animateStats(){
     requestAnimationFrame(step);
   });
 }
+function renderHero(){
+  const host = document.getElementById('heroWrap');
+  const title = document.getElementById('heroTitle');
+  const svg = document.getElementById('ctSvg');
+  if (!host) return;
+  if (state.heroPhoto){
+    host.innerHTML = `<img id="heroImg" data-pid="${+state.heroPhoto}" alt="my Cybertruck" onclick="photoView(${+state.heroPhoto},'hero',0)" style="width:100%;max-height:330px;object-fit:cover;display:block;border:1px solid var(--border2);cursor:zoom-in">
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn sec mini" onclick="document.getElementById('hero_photo').click()">Change photo</button>
+        <span class="mut" style="font-size:10px">Tap the schematic below to log an issue on a panel</span>
+      </div>`;
+    if (title && 'innerHTML' in title) title.innerHTML = 'My Truck <em>photo + tappable issue map</em>';
+    if (svg?.style) svg.style.maxHeight = '190px';
+    hydratePhotos();
+  } else {
+    host.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn sec mini" onclick="document.getElementById('hero_photo').click()">\u25A3 Add a photo of your truck</button>
+      <span class="mut" style="font-size:10px">your photo becomes the dashboard hero \u2014 stays on this device</span></div>`;
+    if (title && 'innerHTML' in title) title.innerHTML = 'Issue Map <em>tap a hotspot to open its log</em>';
+    if (svg?.style) svg.style.maxHeight = '';
+  }
+}
+async function heroSave(){
+  const ids = await photosFromInput('hero_photo');
+  if (!ids.length) return;
+  if (state.heroPhoto){ try { await photoDel(state.heroPhoto); } catch(e){} if (_purls[state.heroPhoto]){ URL.revokeObjectURL(_purls[state.heroPhoto]); delete _purls[state.heroPhoto]; } }
+  state.heroPhoto = ids[0];
+  save(); renderAll();
+  status('Your truck is now the dashboard hero');
+}
 function renderFirstSteps(){
   const host = document.getElementById('firstSteps');
   if (!host) return;
@@ -1388,10 +1421,11 @@ function renderFirstSteps(){
   steps.push(`<div class="nu" onclick="odoPrompt()"><span class="glyph">\u25C9</span><span>Set today&#39;s odometer \u2014 warranty and maintenance math key off it</span><span class="go">GO \u2192</span></div>`);
   steps.push(`<div class="nu" onclick="go('steel')"><span class="glyph">\u25C8</span><span>Walk the steel once \u2014 log anything you spot with the 30-second wizard</span><span class="go">GO \u2192</span></div>`);
   steps.push(`<div class="nu" onclick="go('map')"><span class="glyph">\u27A4</span><span>Plan your first trip \u2014 charge stops land where your battery runs low</span><span class="go">GO \u2192</span></div>`);
+  if (!state.heroPhoto) steps.push(`<div class="nu" onclick="document.getElementById('hero_photo')?.click()"><span class="glyph">\u25A3</span><span>Add a photo of your truck \u2014 it becomes the dashboard hero</span><span class="go">GO \u2192</span></div>`);
   host.innerHTML = `<div class="card"><h3>First Week With The Garage <em>each one earns cred</em></h3>${steps.join('')}</div>`;
 }
 function renderDash(){
-  applyWrap(); renderWrapRow(); animateStats(); renderCred(); renderFirstSteps();
+  applyWrap(); renderWrapRow(); animateStats(); renderCred(); renderFirstSteps(); renderHero();
   // NEXT UP — the priority queue
   const items = [];
   state.maint.forEach(m=>{ const s=maintStatus(m); if (s.pct>=0.8) items.push({pri:s.pct>=1?1:2, txt:`${m.name} — ${s.pct>=1?'OVERDUE':'due soon'} (${s.dueTxt})`, tab:'maint', cls:s.pct>=1?'rd':'am'}); });
@@ -1538,6 +1572,7 @@ async function photoRemove(){
   if (!m?.dataset) return;
   const id = +m.dataset.pid, kind = m.dataset.kind, idx = +m.dataset.idx;
   const entry = kind === 'health' ? state.health[idx] : kind === 'steel' ? state.steel[idx] : kind === 'visit' ? state.visit : kind === 'fsd' ? state.fsd : null;
+  if (kind === 'hero'){ state.heroPhoto = null; try { await photoDel(id); } catch(e){} photoClose(); save(); renderAll(); status('Truck photo removed'); return; }
   if (entry?.photos) entry.photos = entry.photos.filter(p => p !== id);
   try { await photoDel(id); } catch(e){}
   if (_purls[id]){ URL.revokeObjectURL(_purls[id]); delete _purls[id]; }
@@ -2321,6 +2356,7 @@ function freshState(){
   s.health = []; s.steel = []; s.charge = []; s.acc = []; s.checks = {};
   s.odoDate = todayISO();
   s.fsd = { miles: 0, photos: [] };
+  s.heroPhoto = null;
   s.maint.forEach(m => { m.lastMi = 0; m.lastDate = ''; }); // maintStatus falls back to delivery date
   s.onboarded = true;
   return s;

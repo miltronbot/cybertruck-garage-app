@@ -1,5 +1,5 @@
 /* Cybertruck Garage SW — app-shell cache, network-first for API */
-const CACHE = 'ctg-shell-v32';
+const CACHE = 'ctg-shell-v33';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg'];
 
 self.addEventListener('install', e => {
